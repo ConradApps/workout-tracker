@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover"/>
   <title>Workout Tracker</title>
   <meta name="theme-color" content="#0d1117"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -99,17 +99,6 @@
     .set-done-btn.done{background:var(--green-bg);border-color:var(--green);color:var(--green);}
     .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:4px;}
     .set-del-btn:hover{color:var(--red);}
-
-    /* REST TIMER */
-    .rest-timer-wrap{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 6px 3px 10px;transition:border-color 0.3s;flex-shrink:0;}
-    .rest-timer-wrap.active{border-color:var(--accent);}
-    .rest-timer-wrap.urgent{border-color:var(--red);}
-    .rest-timer-label{display:none;}
-    .rest-timer-display{font-size:13px;font-weight:800;color:var(--text);min-width:32px;text-align:center;}
-    .rest-timer-wrap.active .rest-timer-display{color:var(--accent);}
-    .rest-timer-wrap.urgent .rest-timer-display{color:var(--red);}
-    .rest-timer-skip{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;padding:2px 7px;white-space:nowrap;}
-    .rest-timer-skip:hover{border-color:var(--accent);color:var(--accent);}
     .set-del-btn:hover{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--surface2);}
     .ex-footer-btn{flex:1;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.15s;}
@@ -216,12 +205,7 @@
     <div class="workout-title" id="workoutTitle">Workout</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="workout-timer" id="workoutTimer">0:00</div>
-      <div class="rest-timer-wrap" id="restTimerWrap">
-        <span style="font-size:12px;line-height:1;">⏱</span>
-        <span class="rest-timer-display" id="restTimerDisplay">2:00</span>
-        <button class="rest-timer-skip" id="restTimerSkip" onclick="skipRestTimer()">Skip</button>
       </div>
-    </div>
   </div>
   <div id="workoutExercises" style="padding:0.75rem 0 0;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;"></div>
   <div class="workout-footer">
@@ -349,7 +333,7 @@
   let routines = [], logs = [], selectedEx = null;
   let activeRoutine = null, activeWorkout = [];
   let workoutStart = null, workoutTimerInterval = null;
-  let restTimerInterval = null, restTimerSecs = 0;
+
   let editingRoutineId = null;
 
   // ---- THEME ----
@@ -469,11 +453,11 @@
     });
     document.getElementById('workoutTitle').textContent = r.name;
     workoutStart = new Date();
-    clearInterval(restTimerInterval); restTimerInterval = null; restTimerSecs = 0;
     workoutTimerInterval = setInterval(() => {
       const e = Math.floor((new Date()-workoutStart)/1000);
       document.getElementById('workoutTimer').textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
     }, 1000);
+    history.pushState(null, '', location.href);
     document.getElementById('bottomNav').style.display = 'none';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-workout').classList.add('active');
@@ -512,49 +496,12 @@
     const wasUndone = !activeWorkout[ei].sets[si].done;
     activeWorkout[ei].sets[si].done = wasUndone;
     renderWorkout();
-    if (wasUndone) startRestTimer();
   };
   window.delSet = function(ei,si) { activeWorkout[ei].sets.splice(si,1); renderWorkout(); };
   window.addSet = function(ei) {
     const l = activeWorkout[ei].sets.slice(-1)[0]||{weight:0,reps:10};
     activeWorkout[ei].sets.push({weight:l.weight,reps:l.reps,done:false});
     renderWorkout();
-  };
-
-  // Universal rest timer
-  function updateRestTimerUI() {
-    const wrap = document.getElementById('restTimerWrap');
-    const display = document.getElementById('restTimerDisplay');
-    if (!wrap || !display) return;
-    const mins = Math.floor(restTimerSecs / 60);
-    const secs = restTimerSecs % 60;
-    display.textContent = mins + ':' + secs.toString().padStart(2,'0');
-    wrap.classList.toggle('active', restTimerSecs > 0 && restTimerSecs > 10);
-    wrap.classList.toggle('urgent', restTimerSecs > 0 && restTimerSecs <= 10);
-    if (restTimerSecs === 0) {
-      wrap.classList.remove('active','urgent');
-      display.textContent = '2:00';
-    }
-  }
-  function startRestTimer() {
-    clearInterval(restTimerInterval);
-    restTimerSecs = 120;
-    updateRestTimerUI();
-    restTimerInterval = setInterval(() => {
-      restTimerSecs--;
-      updateRestTimerUI();
-      if (restTimerSecs <= 0) {
-        clearInterval(restTimerInterval);
-        restTimerInterval = null;
-        showToast('Rest done! 💪');
-      }
-    }, 1000);
-  }
-  window.skipRestTimer = function() {
-    clearInterval(restTimerInterval);
-    restTimerInterval = null;
-    restTimerSecs = 0;
-    updateRestTimerUI();
   };
 
   window.addOneOff = function() {
@@ -570,8 +517,21 @@
   };
 
   window.confirmEndWorkout = function() { if(confirm('End workout without saving?')) endWorkout(false); };
+
+  // Prevent back button / swipe from killing the workout
+  window.addEventListener('popstate', function(e) {
+    if (document.getElementById('screen-workout').classList.contains('active')) {
+      history.pushState(null, '', location.href);
+    }
+  });
+  window.addEventListener('beforeunload', function(e) {
+    if (document.getElementById('screen-workout').classList.contains('active')) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
   window.finishWorkout = async function() {
-    clearInterval(workoutTimerInterval); clearInterval(restTimerInterval);
+    clearInterval(workoutTimerInterval);
     const dur=Math.floor((new Date()-workoutStart)/60000);
     const exercises=activeWorkout.map(ex=>({exName:ex.exName,bodyweight:ex.bw||false,oneOff:ex.oneOff||false,sets:ex.sets.filter(s=>(s.reps||0)>0).map(s=>({weight:s.weight||0,reps:s.reps||0,done:s.done||false}))})).filter(ex=>ex.sets.length>0);
     try {
@@ -583,8 +543,7 @@
     endWorkout(true);
   };
   function endWorkout(saved) {
-    clearInterval(workoutTimerInterval); clearInterval(restTimerInterval);
-    restTimerInterval = null; restTimerSecs = 0;
+    clearInterval(workoutTimerInterval);
     activeWorkout=[]; activeRoutine=null;
     document.getElementById('bottomNav').style.display='flex';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
