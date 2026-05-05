@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Workout Tracker</title>
   <meta name="theme-color" content="#0d1117"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -33,14 +33,14 @@
       --amber:#9a6700;--amber-bg:#fff8c5;
       --purple:#6639ba;--purple-bg:#fbefff;
     }
-    html,body{height:100%;height:100dvh;}
-    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;width:100%;max-width:100%;}
-    .screen{display:none;min-height:100vh;min-height:100dvh;flex-direction:column;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+    html,body{height:100%;height:100dvh;overflow:hidden;}
+    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow-x:hidden;overflow-y:hidden;width:100%;max-width:100%;position:fixed;top:0;left:0;right:0;bottom:0;}
+    .screen{display:none;height:100vh;height:100dvh;flex-direction:column;padding-bottom:calc(64px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;}
     .screen.active{display:flex;}
     .screen.no-nav{padding-bottom:0;}
 
     /* BOTTOM NAV */
-    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:50;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);}
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:50;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
     .nav-btn{flex:1;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;transition:color 0.15s;padding:8px 0;}
     .nav-btn.active{color:var(--accent);}
 
@@ -80,8 +80,8 @@
     .add-card:hover{border-color:var(--accent);color:var(--accent);}
 
     /* ACTIVE WORKOUT */
-    #screen-workout{background:var(--bg);}
-    .workout-header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top, 0px) + 1rem) 1.25rem 1rem;position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;}
+    #screen-workout{background:var(--bg);height:100vh;height:100dvh;display:none;flex-direction:column;overflow:hidden;}
+    .workout-header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top, 0px) + 0.75rem) 1rem 0.75rem;flex-shrink:0;display:flex;align-items:center;gap:10px;}
     .workout-title{font-size:17px;font-weight:800;color:var(--text);flex:1;}
     .workout-timer{background:var(--green-bg);border:1px solid var(--green);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:800;color:var(--green);}
     .ex-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 1rem 1rem;overflow:hidden;}
@@ -114,7 +114,7 @@
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--surface2);}
     .ex-footer-btn{flex:1;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.15s;}
     .ex-footer-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .workout-footer{padding:1rem 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem);display:flex;gap:10px;}
+    .workout-footer{padding:0.75rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);display:flex;gap:10px;flex-shrink:0;background:var(--bg);}
     .btn-finish{flex:1;background:var(--green);border:none;border-radius:var(--radius-sm);padding:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;color:#fff;cursor:pointer;}
     .btn-finish:hover{opacity:0.88;}
     .btn-add-ex{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;}
@@ -184,6 +184,18 @@
     .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;z-index:400;white-space:nowrap;}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
     @media(max-width:400px){.field-row{grid-template-columns:1fr;}.field-3{grid-template-columns:1fr 1fr;}}
+
+    /* Fill safe area below nav with surface color so no white gap */
+    .bottom-nav::after{
+      content:'';position:absolute;bottom:calc(-1 * env(safe-area-inset-bottom, 0px));
+      left:0;right:0;height:env(safe-area-inset-bottom, 0px);
+      background:var(--surface);
+    }
+    /* Ensure rest timer fits on small screens */
+    @media(max-width:380px){
+      .rest-timer-label{display:none;}
+      .workout-title{font-size:14px;}
+    }
   </style>
 </head>
 <body>
@@ -211,9 +223,6 @@
     <button class="back-btn" onclick="confirmEndWorkout()">←</button>
     <div class="workout-title" id="workoutTitle">Workout</div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
       <div class="workout-timer" id="workoutTimer">0:00</div>
       <div class="rest-timer-wrap" id="restTimerWrap">
         <span class="rest-timer-label">Rest</span>
@@ -222,7 +231,7 @@
       </div>
     </div>
   </div>
-  <div id="workoutExercises" style="padding:1rem 0 0;flex:1;overflow-y:auto;"></div>
+  <div id="workoutExercises" style="padding:0.75rem 0 0;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;"></div>
   <div class="workout-footer">
     <button class="btn-add-ex" onclick="openModal('oneOffModal')">+ Exercise</button>
     <button class="btn-finish" onclick="finishWorkout()">Finish workout ✓</button>
@@ -234,9 +243,6 @@
   <div class="page-header">
     <div><h1>Routines</h1><p>Create and edit your routines</p></div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
       <button class="btn btn-primary" style="width:auto;padding:10px 18px;" onclick="openModal('newRoutineModal')">+ Routine</button>
     </div>
   </div>
@@ -249,9 +255,6 @@
 <div class="screen" id="screen-progress">
   <div class="page-header">
     <div><h1>📈 Progress</h1><p>Track your gains</p></div>
-    <button class="theme-btn" onclick="toggleTheme()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
   </div>
   <div class="page-body">
     <div class="card">
