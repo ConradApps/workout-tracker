@@ -90,8 +90,19 @@
     .set-input:focus{border-color:var(--accent);}
     .set-done-btn{background:none;border:1.5px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-size:16px;padding:5px 10px;transition:all 0.15s;}
     .set-done-btn.done{background:var(--green-bg);border-color:var(--green);color:var(--green);}
-    .set-timer-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;padding:5px 8px;font-family:'Nunito',sans-serif;min-width:44px;transition:color 0.15s;}
     .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:4px;}
+    .set-del-btn:hover{color:var(--red);}
+
+    /* REST TIMER */
+    .rest-timer-wrap{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px 6px 4px 14px;transition:border-color 0.3s;}
+    .rest-timer-wrap.active{border-color:var(--accent);}
+    .rest-timer-wrap.urgent{border-color:var(--red);}
+    .rest-timer-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;}
+    .rest-timer-display{font-size:15px;font-weight:800;color:var(--text);min-width:36px;text-align:center;}
+    .rest-timer-wrap.active .rest-timer-display{color:var(--accent);}
+    .rest-timer-wrap.urgent .rest-timer-display{color:var(--red);}
+    .rest-timer-skip{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:3px 10px;transition:all 0.15s;white-space:nowrap;}
+    .rest-timer-skip:hover{border-color:var(--accent);color:var(--accent);}
     .set-del-btn:hover{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--surface2);}
     .ex-footer-btn{flex:1;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.15s;}
@@ -197,6 +208,11 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
       <div class="workout-timer" id="workoutTimer">0:00</div>
+      <div class="rest-timer-wrap" id="restTimerWrap">
+        <span class="rest-timer-label">Rest</span>
+        <span class="rest-timer-display" id="restTimerDisplay">2:00</span>
+        <button class="rest-timer-skip" id="restTimerSkip" onclick="skipRestTimer()">Skip</button>
+      </div>
     </div>
   </div>
   <div id="workoutExercises" style="padding:1rem 0 0;flex:1;overflow-y:auto;"></div>
@@ -331,7 +347,7 @@
   let routines = [], logs = [], selectedEx = null;
   let activeRoutine = null, activeWorkout = [];
   let workoutStart = null, workoutTimerInterval = null;
-  let setTimerInterval = null, setTimerEi = null, setTimerSi = null;
+  let restTimerInterval = null, restTimerSecs = 0;
   let editingRoutineId = null;
 
   // ---- THEME ----
@@ -451,6 +467,7 @@
     });
     document.getElementById('workoutTitle').textContent = r.name;
     workoutStart = new Date();
+    clearInterval(restTimerInterval); restTimerInterval = null; restTimerSecs = 0;
     workoutTimerInterval = setInterval(() => {
       const e = Math.floor((new Date()-workoutStart)/1000);
       document.getElementById('workoutTimer').textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
@@ -470,14 +487,13 @@
           ${ex.bw?'<span class="ex-bw-badge">Bodyweight</span>':''}
         </div>
         <table class="sets-table">
-          <thead><tr><th>Set</th>${!ex.bw?'<th>Weight (kg)</th>':''}<th>Reps</th><th>Done</th><th></th><th></th></tr></thead>
+          <thead><tr><th>Set</th>${!ex.bw?'<th>Weight (kg)</th>':''}<th>Reps</th><th>Done</th><th></th></tr></thead>
           <tbody>${ex.sets.map((s,si)=>`
             <tr style="${s.done?'opacity:0.5':''}">
               <td class="set-num">${si+1}</td>
               ${!ex.bw?`<td><input class="set-input" type="number" value="${s.weight}" min="0" step="0.5" oninput="updateSet(${ei},${si},'weight',this.value)"/></td>`:''}
               <td><input class="set-input" type="number" value="${s.reps}" min="1" step="1" oninput="updateSet(${ei},${si},'reps',this.value)"/></td>
               <td><button class="set-done-btn${s.done?' done':''}" onclick="toggleDone(${ei},${si})">${s.done?'✓':'○'}</button></td>
-              <td><button class="set-timer-btn" id="stimer-${ei}-${si}" onclick="startSetTimer(${ei},${si})">2:00</button></td>
               <td><button class="set-del-btn" onclick="delSet(${ei},${si})">✕</button></td>
             </tr>`).join('')}
           </tbody>
@@ -491,8 +507,10 @@
     if(f==='reps') activeWorkout[ei].sets[si].reps=parseInt(v)||0;
   };
   window.toggleDone = function(ei,si) {
-    activeWorkout[ei].sets[si].done = !activeWorkout[ei].sets[si].done;
+    const wasUndone = !activeWorkout[ei].sets[si].done;
+    activeWorkout[ei].sets[si].done = wasUndone;
     renderWorkout();
+    if (wasUndone) startRestTimer();
   };
   window.delSet = function(ei,si) { activeWorkout[ei].sets.splice(si,1); renderWorkout(); };
   window.addSet = function(ei) {
@@ -501,26 +519,40 @@
     renderWorkout();
   };
 
-  // Inline set timer
-  window.startSetTimer = function(ei,si) {
-    if (setTimerEi===ei && setTimerSi===si) {
-      clearInterval(setTimerInterval); setTimerInterval=null; setTimerEi=null; setTimerSi=null;
-      const b=document.getElementById('stimer-'+ei+'-'+si); if(b){b.textContent='2:00';b.style.color='';}
-      return;
+  // Universal rest timer
+  function updateRestTimerUI() {
+    const wrap = document.getElementById('restTimerWrap');
+    const display = document.getElementById('restTimerDisplay');
+    if (!wrap || !display) return;
+    const mins = Math.floor(restTimerSecs / 60);
+    const secs = restTimerSecs % 60;
+    display.textContent = mins + ':' + secs.toString().padStart(2,'0');
+    wrap.classList.toggle('active', restTimerSecs > 0 && restTimerSecs > 10);
+    wrap.classList.toggle('urgent', restTimerSecs > 0 && restTimerSecs <= 10);
+    if (restTimerSecs === 0) {
+      wrap.classList.remove('active','urgent');
+      display.textContent = '2:00';
     }
-    if (setTimerInterval) {
-      clearInterval(setTimerInterval);
-      const ob=document.getElementById('stimer-'+setTimerEi+'-'+setTimerSi); if(ob){ob.textContent='2:00';ob.style.color='';}
-    }
-    setTimerEi=ei; setTimerSi=si; let secs=120;
-    function tick() {
-      const b=document.getElementById('stimer-'+ei+'-'+si);
-      if(!b) return;
-      b.textContent=Math.floor(secs/60)+':'+(secs%60).toString().padStart(2,'0');
-      b.style.color=secs<=10?'var(--red)':'var(--muted)';
-    }
-    tick();
-    setTimerInterval=setInterval(()=>{secs--;tick();if(secs<=0){clearInterval(setTimerInterval);setTimerInterval=null;setTimerEi=null;setTimerSi=null;showToast('Rest done! 💪');}},1000);
+  }
+  function startRestTimer() {
+    clearInterval(restTimerInterval);
+    restTimerSecs = 120;
+    updateRestTimerUI();
+    restTimerInterval = setInterval(() => {
+      restTimerSecs--;
+      updateRestTimerUI();
+      if (restTimerSecs <= 0) {
+        clearInterval(restTimerInterval);
+        restTimerInterval = null;
+        showToast('Rest done! 💪');
+      }
+    }, 1000);
+  }
+  window.skipRestTimer = function() {
+    clearInterval(restTimerInterval);
+    restTimerInterval = null;
+    restTimerSecs = 0;
+    updateRestTimerUI();
   };
 
   window.addOneOff = function() {
@@ -537,7 +569,7 @@
 
   window.confirmEndWorkout = function() { if(confirm('End workout without saving?')) endWorkout(false); };
   window.finishWorkout = async function() {
-    clearInterval(workoutTimerInterval);
+    clearInterval(workoutTimerInterval); clearInterval(restTimerInterval);
     const dur=Math.floor((new Date()-workoutStart)/60000);
     const exercises=activeWorkout.map(ex=>({exName:ex.exName,bodyweight:ex.bw||false,oneOff:ex.oneOff||false,sets:ex.sets.filter(s=>(s.reps||0)>0).map(s=>({weight:s.weight||0,reps:s.reps||0,done:s.done||false}))})).filter(ex=>ex.sets.length>0);
     try {
@@ -549,8 +581,9 @@
     endWorkout(true);
   };
   function endWorkout(saved) {
-    clearInterval(workoutTimerInterval); clearInterval(setTimerInterval);
-    activeWorkout=[]; activeRoutine=null; setTimerEi=null; setTimerSi=null;
+    clearInterval(workoutTimerInterval); clearInterval(restTimerInterval);
+    restTimerInterval = null; restTimerSecs = 0;
+    activeWorkout=[]; activeRoutine=null;
     document.getElementById('bottomNav').style.display='flex';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-home').classList.add('active');
