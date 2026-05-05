@@ -33,15 +33,15 @@
       --amber:#9a6700;--amber-bg:#fff8c5;
       --purple:#6639ba;--purple-bg:#fbefff;
     }
-    html,body{height:100%;height:100dvh;overflow:hidden;}
-    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow-x:hidden;overflow-y:hidden;width:100%;max-width:100%;position:fixed;top:0;left:0;right:0;bottom:0;}
-    .screen{display:none;height:100vh;height:100dvh;flex-direction:column;padding-bottom:calc(64px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;}
+    html,body{height:100%;}
+    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100%;overflow-x:hidden;width:100%;}
+    .screen{display:none;min-height:100svh;flex-direction:column;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
     .screen.active{display:flex;}
     .screen.no-nav{padding-bottom:0;}
 
     /* BOTTOM NAV */
-    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:50;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
-    .nav-btn{flex:1;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;transition:color 0.15s;padding:8px 0;}
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
+    .nav-btn{flex:1;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;transition:color 0.15s;height:64px;}
     .nav-btn.active{color:var(--accent);}
 
     /* HEADERS */
@@ -80,10 +80,10 @@
     .add-card:hover{border-color:var(--accent);color:var(--accent);}
 
     /* ACTIVE WORKOUT */
-    #screen-workout{background:var(--bg);height:100vh;height:100dvh;display:none;flex-direction:column;overflow:hidden;}
-    .workout-header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top, 0px) + 0.75rem) 1rem 0.75rem;flex-shrink:0;display:flex;align-items:center;gap:10px;}
-    .workout-title{font-size:17px;font-weight:800;color:var(--text);flex:1;}
-    .workout-timer{background:var(--green-bg);border:1px solid var(--green);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:800;color:var(--green);}
+    #screen-workout{background:var(--bg);}
+    .workout-header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,0px) + 0.6rem) 0.875rem 0.6rem;display:flex;align-items:center;gap:8px;}
+    .workout-title{font-size:15px;font-weight:800;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .workout-timer{background:var(--green-bg);border:1px solid var(--green);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;color:var(--green);white-space:nowrap;flex-shrink:0;}
     .ex-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 1rem 1rem;overflow:hidden;}
     .ex-block-header{padding:1rem 1.25rem;display:flex;align-items:center;gap:10px;}
     .ex-name{font-size:16px;font-weight:800;color:var(--text);flex:1;}
@@ -101,14 +101,14 @@
     .set-del-btn:hover{color:var(--red);}
 
     /* REST TIMER */
-    .rest-timer-wrap{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px 6px 4px 14px;transition:border-color 0.3s;}
+    .rest-timer-wrap{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 6px 3px 10px;transition:border-color 0.3s;flex-shrink:0;}
     .rest-timer-wrap.active{border-color:var(--accent);}
     .rest-timer-wrap.urgent{border-color:var(--red);}
-    .rest-timer-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;}
-    .rest-timer-display{font-size:15px;font-weight:800;color:var(--text);min-width:36px;text-align:center;}
+    .rest-timer-label{display:none;}
+    .rest-timer-display{font-size:13px;font-weight:800;color:var(--text);min-width:32px;text-align:center;}
     .rest-timer-wrap.active .rest-timer-display{color:var(--accent);}
     .rest-timer-wrap.urgent .rest-timer-display{color:var(--red);}
-    .rest-timer-skip{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:3px 10px;transition:all 0.15s;white-space:nowrap;}
+    .rest-timer-skip{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;padding:2px 7px;white-space:nowrap;}
     .rest-timer-skip:hover{border-color:var(--accent);color:var(--accent);}
     .set-del-btn:hover{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--surface2);}
@@ -185,17 +185,9 @@
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
     @media(max-width:400px){.field-row{grid-template-columns:1fr;}.field-3{grid-template-columns:1fr 1fr;}}
 
-    /* Fill safe area below nav with surface color so no white gap */
-    .bottom-nav::after{
-      content:'';position:absolute;bottom:calc(-1 * env(safe-area-inset-bottom, 0px));
-      left:0;right:0;height:env(safe-area-inset-bottom, 0px);
-      background:var(--surface);
-    }
-    /* Ensure rest timer fits on small screens */
-    @media(max-width:380px){
-      .rest-timer-label{display:none;}
-      .workout-title{font-size:14px;}
-    }
+    /* Coloured bar that fills the Android gesture zone */
+    body::after{content:'';display:block;position:fixed;bottom:0;left:0;right:0;
+      height:env(safe-area-inset-bottom,0px);background:var(--surface);z-index:49;}
   </style>
 </head>
 <body>
@@ -225,7 +217,7 @@
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="workout-timer" id="workoutTimer">0:00</div>
       <div class="rest-timer-wrap" id="restTimerWrap">
-        <span class="rest-timer-label">Rest</span>
+        <span style="font-size:12px;line-height:1;">⏱</span>
         <span class="rest-timer-display" id="restTimerDisplay">2:00</span>
         <button class="rest-timer-skip" id="restTimerSkip" onclick="skipRestTimer()">Skip</button>
       </div>
