@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover"/>
   <title>Workout Tracker</title>
-  <meta name="theme-color" content="#0d1117"/>
+  <meta name="theme-color" content="#ffffff"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -95,8 +95,8 @@
     .set-num{font-size:13px;font-weight:700;color:var(--muted);width:32px;}
     .set-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;padding:6px 8px;width:68px;text-align:center;outline:none;}
     .set-input:focus{border-color:var(--accent);}
-    .set-done-btn{background:none;border:1.5px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-size:16px;padding:5px 10px;transition:all 0.15s;}
-    .set-done-btn.done{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+    .set-done-btn{background:transparent;border:2px solid var(--border);border-radius:50%;width:22px;height:22px;padding:0;cursor:pointer;font-size:0;color:transparent;display:inline-block;vertical-align:middle;transition:all 0.15s;}
+    .set-done-btn.done{background:#39d353;border-color:#39d353;}
     .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:4px;}
     .set-del-btn:hover{color:var(--red);}
     .set-del-btn:hover{color:var(--red);}
@@ -197,9 +197,6 @@
   <div class="page-header">
     <div><h1>Workouts</h1><p id="homeDateStr"></p></div>
     <div style="display:flex;align-items:center;gap:10px;">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
       <div class="sync-dot" id="syncDot"></div>
     </div>
   </div>
@@ -283,7 +280,7 @@
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <button class="nav-btn active" data-screen="home" onclick="navigateTo('home')">Main</button>
-  <button class="nav-btn hidden" id="navWorkoutBtn" data-screen="workout" onclick="navigateTo('workout')">🏋️ Workout</button>
+  <button class="nav-btn hidden" id="navWorkoutBtn" data-screen="workout" onclick="navigateTo('workout')">Current 🔥</button>
   <button class="nav-btn" data-screen="builder" onclick="navigateTo('builder')">Routines</button>
   <button class="nav-btn" data-screen="progress" onclick="navigateTo('progress')">📈 Progress</button>
 </div>
@@ -411,20 +408,9 @@
     if(!m.contains(e.target) && !b.contains(e.target)) m.classList.add('hidden');
   });
 
-  // ---- THEME ----
-  const SUN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-  const MOON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-
-  function applyTheme(light) {
-    document.body.classList.toggle('light', light);
-    document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = light ? SUN : MOON);
-  }
-  window.toggleTheme = function() {
-    const isLight = !document.body.classList.contains('light');
-    applyTheme(isLight);
-    localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  };
-  applyTheme(localStorage.getItem('theme') === 'light');
+  // ---- THEME (light only) ----
+  document.body.classList.add('light');
+  window.toggleTheme = function() {};
 
   // ---- HELPERS ----
   window.openModal = id => document.getElementById(id).classList.add('open');
@@ -600,7 +586,7 @@
               <td class="set-num">${si+1}</td>
               ${!ex.bw?`<td><input class="set-input" type="number" value="${s.weight}" min="0" step="0.5" oninput="updateSet(${ei},${si},'weight',this.value)"/></td>`:''}
               <td><input class="set-input" type="number" value="${s.reps}" min="1" step="1" oninput="updateSet(${ei},${si},'reps',this.value)"/></td>
-              <td><button class="set-done-btn${s.done?' done':''}" onclick="toggleDone(${ei},${si})">${s.done?'✓':'○'}</button></td>
+              <td><button class="set-done-btn${s.done?' done':''}" onclick="toggleDone(${ei},${si})" aria-label="Mark set done"></button></td>
               <td><button class="set-del-btn" onclick="delSet(${ei},${si})">✕</button></td>
             </tr>`).join('')}
           </tbody>
