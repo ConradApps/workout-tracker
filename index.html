@@ -177,6 +177,10 @@
     /* Coloured bar that fills the Android gesture zone */
     body::after{content:'';display:block;position:fixed;bottom:0;left:0;right:0;
       height:env(safe-area-inset-bottom,0px);background:var(--surface);z-index:49;}
+
+    /* Hide native scrollbars (was showing as a fixed icon top-right on Android) */
+    html{scrollbar-width:none;-ms-overflow-style:none;}
+    html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{width:0!important;height:0!important;display:none!important;}
   </style>
 </head>
 <body>
