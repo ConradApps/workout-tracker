@@ -229,6 +229,13 @@
   </div>
   <div class="page-body">
     <div class="builder-list" id="builderList"><div class="loading">Connecting...</div></div>
+    <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <div class="card-title" style="color:var(--red);">Danger zone</div>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 8px;">Delete all workout history (graphs &amp; session logs). Routines are kept.</p>
+      <button class="btn" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);width:100%;padding:12px;border-radius:var(--radius-sm);font-weight:800;cursor:pointer;margin-bottom:14px;" onclick="resetProgress()">🗑 Reset progress only</button>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 8px;">Delete EVERYTHING — routines and history. Cannot be undone.</p>
+      <button class="btn" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);width:100%;padding:12px;border-radius:var(--radius-sm);font-weight:800;cursor:pointer;" onclick="resetAllData()">⚠ Reset everything</button>
+    </div>
   </div>
 </div>
 
@@ -238,6 +245,10 @@
     <div><h1>📈 Progress</h1><p>Track your gains</p></div>
   </div>
   <div class="page-body">
+    <div class="card">
+      <div class="card-title">Filter by routine</div>
+      <div class="prog-ex-wrap" id="progressRoutineBtns"></div>
+    </div>
     <div class="card">
       <div class="card-title">Select exercise</div>
       <div class="prog-ex-wrap" id="progressExBtns"><div class="loading">Loading...</div></div>
@@ -336,7 +347,7 @@
   const routinesCol = collection(db, "routines");
   const logsCol = collection(db, "workoutLogs");
 
-  let routines = [], logs = [], selectedEx = null;
+  let routines = [], logs = [], selectedEx = null, selectedRoutineId = 'all';
   let activeRoutine = null, activeWorkout = [];
   let workoutStart = null, workoutTimerInterval = null;
 
@@ -410,7 +421,7 @@
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-'+screen).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen===screen));
-    if (screen==='progress') renderProgressBtns();
+    if (screen==='progress') { renderProgressRoutineBtns(); renderProgressBtns(); }
     if (screen==='home') renderHome();
     if (screen==='workout') window.scrollTo(0,0);
   };
@@ -436,6 +447,44 @@
       closeModal('newRoutineModal');
     } catch(e) { showToast('Error: '+e.message); }
   };
+  window.resetProgress = async function() {
+    if (!confirm('Delete ALL workout history? Routines are kept. This cannot be undone.')) return;
+    try {
+      if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+      activeRoutine = null; activeWorkout = []; workoutStart = null;
+      localStorage.removeItem('activeWorkout_v1');
+      const ops = logs.map(l => deleteDoc(doc(db,'workoutLogs',l.id)));
+      await Promise.all(ops);
+      selectedEx = null;
+      updateWorkoutTab();
+      navigateTo('home');
+      showToast('Progress reset.');
+    } catch(e) { showToast('Reset error: '+e.message); }
+  };
+
+  window.resetAllData = async function() {
+    if (!confirm('Delete ALL routines and workout history? This cannot be undone.')) return;
+    if (!confirm('Are you absolutely sure? Everything will be wiped.')) return;
+    try {
+      // End any active workout
+      if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+      activeRoutine = null; activeWorkout = []; workoutStart = null;
+      // Delete all routines and logs from Firestore
+      const ops = [];
+      routines.forEach(r => ops.push(deleteDoc(doc(db,'routines',r.id))));
+      logs.forEach(l => ops.push(deleteDoc(doc(db,'workoutLogs',l.id))));
+      await Promise.all(ops);
+      // Clear local storage (keep theme)
+      const theme = localStorage.getItem('theme');
+      localStorage.clear();
+      if (theme) localStorage.setItem('theme', theme);
+      selectedEx = null;
+      updateWorkoutTab();
+      navigateTo('home');
+      showToast('All data reset.');
+    } catch(e) { showToast('Reset error: '+e.message); }
+  };
+
   window.deleteRoutine = async function(id) {
     if (!confirm('Delete this routine?')) return;
     try { await deleteDoc(doc(db,'routines',id)); showToast('Deleted.'); } catch(e) { showToast('Error.'); }
@@ -650,10 +699,35 @@
   // ---- PROGRESS ----
   function getAllExNames() {
     const s=new Set();
-    routines.forEach(r=>(r.exercises||[]).forEach(e=>s.add(e.name)));
-    logs.forEach(l=>(l.exercises||[]).forEach(e=>{if(e.exName)s.add(e.exName);}));
+    if (selectedRoutineId==='all') {
+      routines.forEach(r=>(r.exercises||[]).forEach(e=>s.add(e.name)));
+      logs.forEach(l=>(l.exercises||[]).forEach(e=>{if(e.exName)s.add(e.exName);}));
+    } else {
+      const r=routines.find(r=>r.id===selectedRoutineId);
+      if(r) (r.exercises||[]).forEach(e=>s.add(e.name));
+      logs.filter(l=>l.routineId===selectedRoutineId).forEach(l=>(l.exercises||[]).forEach(e=>{if(e.exName)s.add(e.exName);}));
+    }
     return [...s].sort();
   }
+  function renderProgressRoutineBtns() {
+    const wrap=document.getElementById('progressRoutineBtns');
+    if(!wrap) return;
+    const btns=[`<button class="prog-ex-btn${selectedRoutineId==='all'?' active':''}" onclick="selectRoutineFilter('all')">All routines</button>`]
+      .concat(routines.map(r=>`<button class="prog-ex-btn${selectedRoutineId===r.id?' active':''}" onclick="selectRoutineFilter('${r.id}')">${r.name}</button>`));
+    wrap.innerHTML=btns.join('');
+  }
+  window.selectRoutineFilter = function(id) {
+    selectedRoutineId=id;
+    // Drop selection if exercise no longer in filter
+    if(selectedEx && !getAllExNames().includes(selectedEx)){
+      selectedEx=null;
+      document.getElementById('progressContent').classList.add('hidden');
+      document.getElementById('progressEmpty').classList.remove('hidden');
+    }
+    renderProgressRoutineBtns();
+    renderProgressBtns();
+    if(selectedEx) renderProgressData(selectedEx);
+  };
 
   function renderProgressBtns() {
     const names=getAllExNames();
@@ -673,7 +747,8 @@
     document.getElementById('progressEmpty').classList.add('hidden');
     document.getElementById('progressExTitle').textContent=name+' — progress';
     const points=[];
-    [...logs].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(log=>{
+    const flogs = selectedRoutineId==='all' ? logs : logs.filter(l=>l.routineId===selectedRoutineId);
+    [...flogs].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(log=>{
       (log.exercises||[]).forEach(ex=>{
         if(ex.exName!==name) return;
         const valid=(ex.sets||[]).filter(s=>(s.reps||0)>0);
@@ -729,13 +804,13 @@
     document.getElementById('syncDot').classList.add('live');
     routines=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderHome(); renderBuilder();
-    if(document.getElementById('screen-progress').classList.contains('active')) renderProgressBtns();
+    if(document.getElementById('screen-progress').classList.contains('active')) { renderProgressRoutineBtns(); renderProgressBtns(); }
   }, err=>{ document.getElementById('syncDot').classList.remove('live'); showToast('Connection error.'); console.error(err); });
 
   onSnapshot(query(logsCol,orderBy("createdAt","desc")), snap=>{
     logs=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderHome(); renderBuilder();
-    if(document.getElementById('screen-progress').classList.contains('active')){renderProgressBtns();if(selectedEx)renderProgressData(selectedEx);}
+    if(document.getElementById('screen-progress').classList.contains('active')){renderProgressRoutineBtns();renderProgressBtns();if(selectedEx)renderProgressData(selectedEx);}
   }, err=>console.error(err));
 
   restoreWorkoutState();
