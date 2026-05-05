@@ -203,9 +203,9 @@
 </div>
 
 <!-- ACTIVE WORKOUT -->
-<div class="screen no-nav" id="screen-workout">
+<div class="screen" id="screen-workout">
   <div class="workout-header">
-    <button class="back-btn" onclick="confirmEndWorkout()">←</button>
+    <button class="back-btn" onclick="navigateTo('home')">←</button>
     <div class="workout-title" id="workoutTitle">Workout</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="workout-timer" id="workoutTimer">0:00</div>
@@ -215,6 +215,7 @@
   <div class="workout-footer">
     <button class="btn-add-ex" onclick="openModal('oneOffModal')">+ Exercise</button>
     <button class="btn-finish" onclick="finishWorkout()">Finish workout ✓</button>
+    <button class="btn-add-ex" style="color:var(--red);border-color:var(--red);" onclick="confirmEndWorkout()">Discard</button>
   </div>
 </div>
 
@@ -259,6 +260,7 @@
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <button class="nav-btn active" data-screen="home" onclick="navigateTo('home')">Main</button>
+  <button class="nav-btn hidden" id="navWorkoutBtn" data-screen="workout" onclick="navigateTo('workout')">🏋️ Workout</button>
   <button class="nav-btn" data-screen="builder" onclick="navigateTo('builder')">Routines</button>
   <button class="nav-btn" data-screen="progress" onclick="navigateTo('progress')">📈 Progress</button>
 </div>
@@ -338,6 +340,37 @@
   let activeRoutine = null, activeWorkout = [];
   let workoutStart = null, workoutTimerInterval = null;
 
+  // ---- WORKOUT PERSISTENCE ----
+  const WK_KEY = 'activeWorkout_v1';
+  function saveWorkoutState() {
+    if (!activeRoutine) { localStorage.removeItem(WK_KEY); return; }
+    try {
+      localStorage.setItem(WK_KEY, JSON.stringify({
+        routine: activeRoutine,
+        workout: activeWorkout,
+        start: workoutStart ? workoutStart.toISOString() : null
+      }));
+    } catch(e) { console.warn('save workout failed', e); }
+  }
+  function restoreWorkoutState() {
+    try {
+      const raw = localStorage.getItem(WK_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (!d || !d.routine) return;
+      activeRoutine = d.routine;
+      activeWorkout = d.workout || [];
+      workoutStart = d.start ? new Date(d.start) : new Date();
+      document.getElementById('workoutTitle').textContent = activeRoutine.name;
+      workoutTimerInterval = setInterval(() => {
+        const e = Math.floor((new Date()-workoutStart)/1000);
+        document.getElementById('workoutTimer').textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
+      }, 1000);
+      renderWorkout();
+      updateWorkoutTab();
+    } catch(e) { console.warn('restore failed', e); localStorage.removeItem(WK_KEY); }
+  }
+
   let editingRoutineId = null;
 
   // ---- THEME ----
@@ -374,12 +407,18 @@
 
   // ---- NAV ----
   window.navigateTo = function(screen) {
-    document.querySelectorAll('.screen:not(#screen-workout)').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-'+screen).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen===screen));
     if (screen==='progress') renderProgressBtns();
     if (screen==='home') renderHome();
+    if (screen==='workout') window.scrollTo(0,0);
   };
+  function updateWorkoutTab() {
+    const btn=document.getElementById('navWorkoutBtn');
+    if(!btn) return;
+    btn.classList.toggle('hidden', !activeRoutine);
+  }
 
   // ---- ROUTINES ----
   window.openNewRoutineModal = function(id) {
@@ -445,6 +484,8 @@
   window.startWorkout = function(routineId) {
     const r = routines.find(r=>r.id===routineId);
     if (!r || !(r.exercises||[]).length) { showToast('Add exercises first!'); return; }
+    if (activeRoutine && activeRoutine.id===routineId) { navigateTo('workout'); return; }
+    if (activeRoutine && !confirm('A different workout is in progress. Discard it and start this one?')) return;
     activeRoutine = r;
     activeWorkout = (r.exercises||[]).map(ex => {
       const last = getLastSession(ex.name);
@@ -462,9 +503,9 @@
       document.getElementById('workoutTimer').textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
     }, 1000);
     history.pushState(null, '', location.href);
-    document.getElementById('bottomNav').style.display = 'none';
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById('screen-workout').classList.add('active');
+    saveWorkoutState();
+    navigateTo('workout');
+    updateWorkoutTab();
     renderWorkout();
     window.scrollTo(0,0);
   };
@@ -495,16 +536,19 @@
   window.updateSet = function(ei,si,f,v) {
     if(f==='weight') activeWorkout[ei].sets[si].weight=parseFloat(v)||0;
     if(f==='reps') activeWorkout[ei].sets[si].reps=parseInt(v)||0;
+    saveWorkoutState();
   };
   window.toggleDone = function(ei,si) {
     const wasUndone = !activeWorkout[ei].sets[si].done;
     activeWorkout[ei].sets[si].done = wasUndone;
+    saveWorkoutState();
     renderWorkout();
   };
-  window.delSet = function(ei,si) { activeWorkout[ei].sets.splice(si,1); renderWorkout(); };
+  window.delSet = function(ei,si) { activeWorkout[ei].sets.splice(si,1); saveWorkoutState(); renderWorkout(); };
   window.addSet = function(ei) {
     const l = activeWorkout[ei].sets.slice(-1)[0]||{weight:0,reps:10};
     activeWorkout[ei].sets.push({weight:l.weight,reps:l.reps,done:false});
+    saveWorkoutState();
     renderWorkout();
   };
 
@@ -517,22 +561,14 @@
     activeWorkout.push({exId:null,exName:name,bw,oneOff:true,lastSession:last,
       sets:Array.from({length:n},(_,i)=>{const ls=last?last.sets[Math.min(i,last.sets.length-1)]:null;return{weight:ls?ls.weight:parseFloat(document.getElementById('oneOffWeight').value)||0,reps:ls?ls.reps:parseInt(document.getElementById('oneOffReps').value)||10,done:false};})
     });
-    renderWorkout(); closeModal('oneOffModal'); showToast(name+' added!');
+    saveWorkoutState(); renderWorkout(); closeModal('oneOffModal'); showToast(name+' added!');
   };
 
   window.confirmEndWorkout = function() { if(confirm('End workout without saving?')) endWorkout(false); };
 
-  // Prevent back button / swipe from killing the workout
-  window.addEventListener('popstate', function(e) {
-    if (document.getElementById('screen-workout').classList.contains('active')) {
-      history.pushState(null, '', location.href);
-    }
-  });
+  // Warn before unload only if a workout is in progress
   window.addEventListener('beforeunload', function(e) {
-    if (document.getElementById('screen-workout').classList.contains('active')) {
-      e.preventDefault();
-      e.returnValue = '';
-    }
+    if (activeRoutine) { e.preventDefault(); e.returnValue=''; }
   });
   window.finishWorkout = async function() {
     clearInterval(workoutTimerInterval);
@@ -549,19 +585,28 @@
   function endWorkout(saved) {
     clearInterval(workoutTimerInterval);
     activeWorkout=[]; activeRoutine=null;
-    document.getElementById('bottomNav').style.display='flex';
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById('screen-home').classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen==='home'));
-    renderHome();
+    localStorage.removeItem(WK_KEY);
+    navigateTo('home');
+    updateWorkoutTab();
   }
 
   // ---- RENDER HOME ----
   function renderHome() {
     document.getElementById('homeDateStr').textContent=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+    updateWorkoutTab();
     const grid=document.getElementById('routineGrid');
-    if(!routines.length){grid.innerHTML=`<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>`;return;}
-    grid.innerHTML=routines.map(r=>{
+    let resume='';
+    if(activeRoutine){
+      resume=`<div class="routine-card" style="border-color:var(--accent);background:var(--accent-bg);">
+        <div class="routine-card-header"><div class="routine-info">
+          <div class="routine-name">⏱ Workout in progress</div>
+          <div class="routine-meta">${activeRoutine.name}</div>
+        </div></div>
+        <button class="start-btn" onclick="navigateTo('workout')">Resume workout →</button>
+      </div>`;
+    }
+    if(!routines.length){grid.innerHTML=resume+`<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>`;return;}
+    grid.innerHTML=resume+routines.map(r=>{
       const last=[...logs].filter(l=>l.routineId===r.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
       return `<div class="routine-card">
         <div class="routine-card-header">
@@ -693,6 +738,7 @@
     if(document.getElementById('screen-progress').classList.contains('active')){renderProgressBtns();if(selectedEx)renderProgressData(selectedEx);}
   }, err=>console.error(err));
 
+  restoreWorkoutState();
   renderHome();
 </script>
 <script>
