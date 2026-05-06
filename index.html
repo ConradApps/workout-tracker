@@ -99,7 +99,7 @@
     .ex-bw-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--purple-bg);color:var(--purple);}
     .ex-last{font-size:12px;font-weight:600;color:var(--accent);padding:0 1.125rem 0.625rem;line-height:1.5;}
     .sets-table{width:100%;border-collapse:collapse;}
-    .sets-table th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;padding:8px 12px;border-top:1px solid var(--border);text-align:left;}
+    .sets-table th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;padding:8px 12px;border-top:1px solid var(--border);text-align:left;}.sets-table th:last-child,.sets-table td:last-child{padding-right:16px;width:52px;}
     .sets-table td{padding:10px;border-top:1px solid var(--border);}
     .set-num{font-size:14px;font-weight:700;color:var(--muted);width:32px;}
     .set-input{background:var(--surface2);border:none;border-radius:8px;color:var(--text);font-family:inherit;font-size:16px;font-weight:600;padding:8px;width:72px;text-align:center;outline:none;transition:background 0.15s;font-variant-numeric:tabular-nums;}
@@ -107,7 +107,7 @@
     .set-done-btn{background:transparent;border:2px solid var(--border-strong);border-radius:50%;width:24px;height:24px;padding:0;cursor:pointer;font-size:0;color:transparent;display:inline-block;vertical-align:middle;transition:all 0.18s var(--ease);}
     .set-done-btn:active{transform:scale(0.85);}
     .set-done-btn.done{background:var(--green);border-color:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,0.18);}
-    .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:15px;padding:8px 12px 8px 6px;min-width:40px;text-align:center;}
+    .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:15px;padding:8px 6px;width:44px;text-align:center;display:block;margin-right:8px;}
     .set-del-btn:active{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);}
     .ex-footer-btn{flex:1;background:var(--surface2);border:none;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;transition:all 0.15s var(--ease);}
@@ -480,57 +480,85 @@
   (function(){
     const pager = document.getElementById('pager');
     if(!pager) return;
-    let startX=0,startY=0,dx=0,dragging=false,locked=false,horiz=false,w=window.innerWidth;
+    let startX=0, startY=0, dx=0, active=false, decided=false, isHoriz=false, w=window.innerWidth;
+
     function onStart(e){
+      // Never intercept when workout overlay is open
       if(document.getElementById('screen-workout').classList.contains('active')) return;
-      // Don't start swipe on inputs / scrollable inner
-      const tag=(e.target.tagName||'').toLowerCase();
-      if(['input','select','textarea','button'].includes(tag)) return;
-      const t=e.touches?e.touches[0]:e;
-      startX=t.clientX;startY=t.clientY;dx=0;dragging=true;locked=false;horiz=false;
-      w=window.innerWidth;
-      pager.classList.add('dragging');
+      // Allow multi-touch gestures (pinch etc) to pass through
+      if(e.touches && e.touches.length > 1) return;
+      const t = e.touches ? e.touches[0] : e;
+      startX = t.clientX;
+      startY = t.clientY;
+      dx = 0;
+      active = true;
+      decided = false;
+      isHoriz = false;
+      w = window.innerWidth;
     }
+
     function onMove(e){
-      if(!dragging) return;
-      const t=e.touches?e.touches[0]:e;
-      const ddx=t.clientX-startX, ddy=t.clientY-startY;
-      if(!locked){
-        if(Math.abs(ddx)>6 || Math.abs(ddy)>6){
-          locked=true;
-          // Require a clear horizontal bias — at least 1.5x more horizontal than vertical
-          horiz = Math.abs(ddx) > Math.abs(ddy) * 1.5;
-          if(!horiz){ dragging=false; pager.classList.remove('dragging'); pager.style.transform=`translate3d(${-pageIdx*33.3333}%,0,0)`; return; }
-        } else return;
+      if(!active) return;
+      if(e.touches && e.touches.length > 1){ active=false; return; }
+      const t = e.touches ? e.touches[0] : e;
+      const ddx = t.clientX - startX;
+      const ddy = t.clientY - startY;
+
+      if(!decided){
+        // Wait for at least 8px of movement before deciding direction
+        if(Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return;
+        decided = true;
+        // Must be at least 2x more horizontal than vertical to trigger swipe
+        isHoriz = Math.abs(ddx) >= Math.abs(ddy) * 2;
+        if(isHoriz){
+          pager.classList.add('dragging');
+        } else {
+          active = false;
+          return;
+        }
       }
-      if(!horiz) return;
-      // resist at edges
-      let resist=ddx;
-      if((pageIdx===0 && ddx>0) || (pageIdx===2 && ddx<0)) resist = ddx*0.3;
-      dx=resist;
-      const pct = -pageIdx*33.3333 + (resist/w)*33.3333;
+
+      if(!isHoriz) return;
+
+      // Elastic resistance at first/last page
+      let resist = ddx;
+      if((pageIdx===0 && ddx>0) || (pageIdx===2 && ddx<0)) resist = ddx * 0.25;
+      dx = resist;
+      const pct = -pageIdx * 33.3333 + (resist / w) * 33.3333;
       pager.style.transform = `translate3d(${pct}%,0,0)`;
+
+      // Prevent vertical scroll while swiping horizontally
       if(e.cancelable) e.preventDefault();
     }
+
     function onEnd(){
-      if(!dragging){ return; }
-      dragging=false;
+      if(!active) return;
+      active = false;
       pager.classList.remove('dragging');
-      if(!horiz){ return; }
-      const threshold = w*0.18;
-      let next=pageIdx;
-      if(dx<-threshold && pageIdx<2) next=pageIdx+1;
-      else if(dx>threshold && pageIdx>0) next=pageIdx-1;
+      if(!isHoriz) return;
+      // Snap: 20% of screen width or velocity-like quick flick
+      const threshold = w * 0.20;
+      let next = pageIdx;
+      if(dx < -threshold && pageIdx < 2) next = pageIdx + 1;
+      else if(dx > threshold && pageIdx > 0) next = pageIdx - 1;
       setPager(next, true);
     }
-    pager.addEventListener('touchstart', onStart, {passive:true});
-    pager.addEventListener('touchmove', onMove, {passive:false});
-    pager.addEventListener('touchend', onEnd);
-    pager.addEventListener('touchcancel', onEnd);
-    window.addEventListener('resize',()=>{ w=window.innerWidth; setPager(pageIdx,false); requestAnimationFrame(()=>pager.classList.remove('dragging')); });
-    // initial
-    requestAnimationFrame(()=>setPager(0,false));
-    requestAnimationFrame(()=>{ requestAnimationFrame(()=>pager.classList.remove('dragging')); });
+
+    // Attach to document so swipe works from ANY point on screen
+    document.addEventListener('touchstart', onStart, {passive:true});
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onEnd, {passive:true});
+    document.addEventListener('touchcancel', onEnd, {passive:true});
+
+    window.addEventListener('resize', () => {
+      w = window.innerWidth;
+      setPager(pageIdx, false);
+      requestAnimationFrame(() => pager.classList.remove('dragging'));
+    });
+
+    // Set initial position
+    requestAnimationFrame(() => setPager(0, false));
+    requestAnimationFrame(() => requestAnimationFrame(() => pager.classList.remove('dragging')));
   })();
   function updateWorkoutTab() {
     const btn=document.getElementById('navWorkoutBtn');
