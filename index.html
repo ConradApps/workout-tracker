@@ -749,7 +749,7 @@
     saveWorkoutState(); renderWorkout(); closeModal('oneOffModal'); showToast(name+' added!');
   };
 
-  window.confirmEndWorkout = function() { if(confirm('End workout without saving?')) endWorkout(false); };
+  window.confirmEndWorkout = function() { openModal('discardModal'); };
 
   // Warn before unload only if a workout is in progress
   window.addEventListener('beforeunload', function(e) {
