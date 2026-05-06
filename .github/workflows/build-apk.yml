@@ -30,6 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Sync web assets into www folder
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          cp manifest.json www/manifest.json
+          cp sw.js www/sw.js
+          cp icon-192.png www/icon-192.png
+          cp icon-512.png www/icon-512.png
+
       - name: Remove existing android folder if present
         run: rm -rf android
 
