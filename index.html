@@ -1024,8 +1024,8 @@
       sets: Array.from({ length: n }, (_, i) => {
         const ls = last?.sets[Math.min(i, last.sets.length - 1)] ?? null;
         return {
-          weight: ls?.weight ?? parseFloat(document.getElementById('oneOffWeight').value) || 0,
-          reps:   ls?.reps   ?? parseInt(document.getElementById('oneOffReps').value) || 10,
+          weight: ls?.weight ?? (parseFloat(document.getElementById('oneOffWeight').value) || 0),
+          reps:   ls?.reps   ?? (parseInt(document.getElementById('oneOffReps').value)   || 10),
           done: false
         };
       })
