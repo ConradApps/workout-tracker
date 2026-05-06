@@ -1,0 +1,11 @@
+{
+  "appId": "com.lyfts.app",
+  "appName": "Lyfts",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
