@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli
+      - name: Add Android platform
+        run: npx cap add android
 
       - name: Copy web assets into Capacitor
         run: npx cap copy android
@@ -65,10 +65,10 @@ jobs:
           body: |
             ✅ Auto-built from the latest `main` branch commit.
 
-            **To install on your Android phone:**
+            **To install on your OPPO Find X9:**
             1. Download `Lyfts-debug.apk` below
             2. Open the file on your phone
-            3. Tap Install (allow "unknown sources" if prompted)
+            3. Tap Install (allow "Install unknown apps" if prompted)
           files: Lyfts-debug.apk
           make_latest: true
         env:
