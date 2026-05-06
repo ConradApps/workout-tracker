@@ -36,9 +36,9 @@
     body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Inter','Nunito',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100%;overflow-x:hidden;width:100%;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;}
 
     /* SWIPE PAGER */
-    .pager{position:fixed;inset:0;display:flex;width:300%;will-change:transform;transition:transform 380ms var(--ease);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:preserve-3d;}
+    .pager{position:fixed;inset:0;display:flex;width:300%;will-change:transform;transition:transform 380ms var(--ease);}
     .pager.dragging{transition:none;}
-    .pager-page{width:33.3333%;height:100svh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:calc(78px + env(safe-area-inset-bottom));backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+    .pager-page{width:33.3333%;height:100svh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:calc(78px + env(safe-area-inset-bottom));}
 
     .screen{display:none;min-height:100svh;flex-direction:column;}
     .screen.active{display:flex;}
@@ -100,7 +100,7 @@
     .ex-bw-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--purple-bg);color:var(--purple);}
     .ex-last{font-size:12px;font-weight:600;color:var(--accent);padding:0 1.125rem 0.625rem;line-height:1.5;}
     .sets-table{width:100%;border-collapse:collapse;}
-    .sets-table th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;padding:8px 12px;border-top:1px solid var(--border);text-align:left;}.sets-table th:last-child{width:40px;padding-right:4px;}.sets-table td:last-child{width:40px;padding:4px 4px 4px 0;}
+    .sets-table th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;padding:8px 12px;border-top:1px solid var(--border);text-align:left;}.sets-table th:last-child{width:48px;padding:8px 16px 8px 0;}.sets-table td:last-child{width:48px;padding:4px 16px 4px 0;}
     .sets-table td{padding:10px;border-top:1px solid var(--border);}
     .set-num{font-size:14px;font-weight:700;color:var(--muted);width:32px;}
     .set-input{background:var(--surface2);border:none;border-radius:8px;color:var(--text);font-family:inherit;font-size:16px;font-weight:600;padding:8px;width:72px;text-align:center;outline:none;transition:background 0.15s;font-variant-numeric:tabular-nums;}
@@ -108,7 +108,7 @@
     .set-done-btn{background:transparent;border:2px solid var(--border-strong);border-radius:50%;width:24px;height:24px;padding:0;cursor:pointer;font-size:0;color:transparent;display:inline-block;vertical-align:middle;transition:all 0.18s var(--ease);}
     .set-done-btn:active{transform:scale(0.85);}
     .set-done-btn.done{background:var(--green);border-color:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,0.18);}
-    .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:6px;width:36px;text-align:center;display:block;}
+    .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:6px 0;width:32px;text-align:center;display:block;}
     .set-del-btn:active{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);}
     .ex-footer-btn{flex:1;background:var(--surface2);border:none;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;transition:all 0.15s var(--ease);}
@@ -526,9 +526,7 @@
       if((pageIdx===0 && ddx>0) || (pageIdx===2 && ddx<0)) resist = ddx * 0.25;
       dx = resist;
       const pct = -pageIdx * 33.3333 + (resist / w) * 33.3333;
-      requestAnimationFrame(() => {
-        pager.style.transform = `translate3d(${pct}%,0,0)`;
-      });
+      pager.style.transform = `translate3d(${pct}%,0,0)`;
 
       // Prevent vertical scroll while swiping horizontally
       if(e.cancelable) e.preventDefault();
