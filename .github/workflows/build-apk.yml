@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli
+
+      - name: Copy web assets into Capacitor
+        run: npx cap copy android
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk Lyfts-debug.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lyfts-debug
+          path: Lyfts-debug.apk
+          retention-days: 30
+
+      - name: Delete existing 'latest' release if it exists
+        run: |
+          gh release delete latest --yes || true
+          git push --delete origin latest || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Lyfts – Latest Build"
+          body: |
+            ✅ Auto-built from the latest `main` branch commit.
+
+            **To install on your Android phone:**
+            1. Download `Lyfts-debug.apk` below
+            2. Open the file on your phone
+            3. Tap Install (allow "unknown sources" if prompted)
+          files: Lyfts-debug.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
