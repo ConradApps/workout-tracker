@@ -30,9 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install sharp for icon resizing
-        run: npm install sharp
-
       - name: Sync web assets into www folder
         run: |
           mkdir -p www
@@ -51,7 +48,7 @@ jobs:
       - name: Copy web assets into Capacitor
         run: npx cap copy android
 
-      - name: Generate Android icons from icon-512.png
+      - name: Generate Android icons
         run: |
           pip install Pillow --break-system-packages -q
           python3 << 'PYEOF'
@@ -60,29 +57,61 @@ jobs:
 
           src = Image.open("icon-512.png").convert("RGBA")
 
+          # White background composite
+          def make_png(size):
+            bg = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+            icon = src.resize((size, size), Image.LANCZOS)
+            bg.paste(icon, mask=icon.split()[3])
+            return bg.convert("RGB")
+
           sizes = {
-            "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": 48,
-            "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": 72,
-            "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": 96,
-            "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": 144,
-            "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": 192,
-            "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png": 48,
-            "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png": 72,
-            "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": 96,
-            "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": 144,
-            "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": 192,
+            "mipmap-mdpi":    48,
+            "mipmap-hdpi":    72,
+            "mipmap-xhdpi":   96,
+            "mipmap-xxhdpi":  144,
+            "mipmap-xxxhdpi": 192,
           }
 
-          for path, size in sizes.items():
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            img = src.resize((size, size), Image.LANCZOS)
-            # Convert to RGB with white background for non-round
-            bg = Image.new("RGBA", (size, size), (255, 255, 255, 255))
-            bg.paste(img, mask=img.split()[3])
-            bg.convert("RGB").save(path, "PNG")
-            print(f"Generated {path} at {size}px")
+          base = "android/app/src/main/res"
+          for folder, size in sizes.items():
+            path = f"{base}/{folder}"
+            os.makedirs(path, exist_ok=True)
+            img = make_png(size)
+            img.save(f"{path}/ic_launcher.png")
+            img.save(f"{path}/ic_launcher_round.png")
+            # Foreground for adaptive icon (no padding)
+            img.save(f"{path}/ic_launcher_foreground.png")
+            print(f"{folder}: {size}px")
 
           PYEOF
+
+      - name: Fix adaptive icon XML to use plain launcher
+        run: |
+          # Replace adaptive icon XML to use our plain icon directly
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+
+          # Set background color to white
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/ic_launcher_background.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#FFFFFF</color>
+          </resources>
+          XML
 
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
