@@ -837,53 +837,54 @@
     updateHomeTimer();
     const grid = document.getElementById('routineGrid');
 
-    // Resume card — no green hue, just a clean card with accent green Resume button
+    const resumeBtn = `<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>`;
+
     let resume = '';
     if (activeRoutine) {
-      resume = '<div class="routine-card">'
-        + '<div class="routine-card-header"><div class="routine-info">'
-        + '<div class="routine-name">⏱ Workout in progress</div>'
-        + '<div class="routine-meta">' + activeRoutine.name + '</div>'
-        + '</div></div>'
-        + '<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>'
-        + '</div>';
+      resume = `<div class="routine-card">
+        <div class="routine-card-header"><div class="routine-info">
+          <div class="routine-name">⏱ Workout in progress</div>
+          <div class="routine-meta">${activeRoutine.name}</div>
+        </div></div>
+        ${resumeBtn}
+      </div>`;
     }
 
     if (!routines.length) {
-      grid.innerHTML = resume + '<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>';
+      grid.innerHTML = resume + `<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>`;
       return;
     }
 
-    let cards = '';
-    routines.forEach(function(r) {
+    const cards = routines.map(r => {
       const last = [...logs].filter(l => l.routineId === r.id).sort((a,b) => new Date(b.date)-new Date(a.date))[0];
       const isActive = activeRoutine && activeRoutine.id === r.id;
       const otherActive = activeRoutine && activeRoutine.id !== r.id;
-      const tags = (r.exercises||[]).map(e => '<span class="routine-ex-tag">' + e.name + '</span>').join('') || '<span style="font-size:12px;color:var(--hint);">No exercises yet</span>';
+      const tags = (r.exercises||[]).map(e => `<span class="routine-ex-tag">${e.name}</span>`).join('') || '<span style="font-size:12px;color:var(--hint);">No exercises yet</span>';
       const lastStr = last ? 'Last: ' + fmtDate(last.date) + ' · ' + (last.durationMins||0) + ' mins' : 'Not done yet';
 
       let btn;
       if (isActive) {
-        btn = '<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>';
+        btn = resumeBtn;
       } else if (otherActive) {
-        btn = '<button class="start-btn" disabled style="background:var(--surface3);color:var(--hint);cursor:not-allowed;opacity:1;">▶ Start workout</button>';
+        btn = `<button class="start-btn" disabled style="background:var(--surface3);color:var(--hint);cursor:not-allowed;opacity:1;">▶ Start workout</button>`;
       } else {
-        btn = '<button class="start-btn" onclick="startWorkout('' + r.id + '')">▶ Start workout</button>';
+        btn = `<button class="start-btn" onclick="startWorkout('${r.id}')">▶ Start workout</button>`;
       }
 
-      cards += '<div class="routine-card">'
-        + '<div class="routine-card-header">'
-        + '<div class="routine-info">'
-        + '<div class="routine-name">' + r.name + '</div>'
-        + '<div class="routine-meta">' + (r.exercises||[]).length + ' exercises</div>'
-        + '<div class="routine-last">' + lastStr + '</div>'
-        + '</div></div>'
-        + '<div class="routine-exercises">' + tags + '</div>'
-        + btn
-        + '</div>';
-    });
+      return `<div class="routine-card">
+        <div class="routine-card-header">
+          <div class="routine-info">
+            <div class="routine-name">${r.name}</div>
+            <div class="routine-meta">${(r.exercises||[]).length} exercises</div>
+            <div class="routine-last">${lastStr}</div>
+          </div>
+        </div>
+        <div class="routine-exercises">${tags}</div>
+        ${btn}
+      </div>`;
+    }).join('');
 
-    grid.innerHTML = resume + cards + '<button class="add-card" onclick="navigateTo('builder')">+ New routine</button>';
+    grid.innerHTML = resume + cards + `<button class="add-card" onclick="navigateTo('builder')">+ New routine</button>`;
   }
 
   // ---- RENDER BUILDER ----
