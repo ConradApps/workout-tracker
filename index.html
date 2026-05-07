@@ -240,7 +240,8 @@
 <div class="screen in-pager active" id="screen-home">
   <div class="page-header">
     <div><h1>Workouts</h1><p id="homeDateStr"></p></div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="homeTimer" style="font-size:13px;font-weight:700;color:var(--green);display:none;font-variant-numeric:tabular-nums;"></span>
       <div class="sync-dot" id="syncDot"></div>
     </div>
   </div>
@@ -596,6 +597,17 @@
     if(!btn) return;
     btn.classList.toggle('hidden', !activeRoutine);
   }
+  function updateHomeTimer() {
+    const ht = document.getElementById('homeTimer');
+    if (!ht) return;
+    if (activeRoutine && workoutStart) {
+      const e = Math.floor((new Date()-workoutStart)/1000);
+      ht.textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
+      ht.style.display = 'inline';
+    } else {
+      ht.style.display = 'none';
+    }
+  }
 
   // ---- ROUTINES ----
   window.openNewRoutineModal = function(id) {
@@ -720,7 +732,10 @@
     workoutStart = new Date();
     workoutTimerInterval = setInterval(() => {
       const e = Math.floor((new Date()-workoutStart)/1000);
-      document.getElementById('workoutTimer').textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
+      const fmt = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
+      document.getElementById('workoutTimer').textContent = fmt;
+      const ht = document.getElementById('homeTimer');
+      if (ht) ht.textContent = fmt;
     }, 1000);
     history.pushState(null, '', location.href);
     saveWorkoutState();
@@ -807,45 +822,68 @@
 
   function endWorkout(saved) {
     clearInterval(workoutTimerInterval);
-    activeWorkout=[]; activeRoutine=null;
+    activeWorkout=[]; activeRoutine=null; workoutStart=null;
     localStorage.removeItem(WK_KEY);
+    const ht = document.getElementById('homeTimer');
+    if (ht) { ht.style.display='none'; ht.textContent=''; }
     navigateTo('home');
     updateWorkoutTab();
   }
 
   // ---- RENDER HOME ----
   function renderHome() {
-    document.getElementById('homeDateStr').textContent=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+    document.getElementById('homeDateStr').textContent = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
     updateWorkoutTab();
-    const grid=document.getElementById('routineGrid');
-    let resume='';
-    if(activeRoutine){
-      resume=`<div class="routine-card" style="border-color:var(--green);background:var(--green-bg);">
-        <div class="routine-card-header"><div class="routine-info">
-          <div class="routine-name">⏱ Workout in progress</div>
-          <div class="routine-meta">${activeRoutine.name}</div>
-        </div></div>
-        <button class="start-btn" onclick="navigateTo('workout')">Resume workout →</button>
-      </div>`;
+    updateHomeTimer();
+    const grid = document.getElementById('routineGrid');
+
+    // Resume card — no green hue, just a clean card with accent green Resume button
+    let resume = '';
+    if (activeRoutine) {
+      resume = '<div class="routine-card">'
+        + '<div class="routine-card-header"><div class="routine-info">'
+        + '<div class="routine-name">⏱ Workout in progress</div>'
+        + '<div class="routine-meta">' + activeRoutine.name + '</div>'
+        + '</div></div>'
+        + '<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>'
+        + '</div>';
     }
-    if(!routines.length){grid.innerHTML=resume+`<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>`;return;}
-    grid.innerHTML=resume+routines.map(r=>{
-      const last=[...logs].filter(l=>l.routineId===r.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
-      return `<div class="routine-card">
-        <div class="routine-card-header">
-          <div class="routine-info">
-            <div class="routine-name">${r.name}</div>
-            <div class="routine-meta">${(r.exercises||[]).length} exercises</div>
-            <div class="routine-last">${last?'Last: '+fmtDate(last.date)+' · '+(last.durationMins||0)+' mins':'Not done yet'}</div>
-          </div>
-        </div>
-        <div class="routine-exercises">${(r.exercises||[]).map(e=>`<span class="routine-ex-tag">${e.name}</span>`).join('')||'<span style="font-size:12px;color:var(--hint);">No exercises yet</span>'}</div>
-        ${activeRoutine && activeRoutine.id !== r.id
-          ? '<button class="start-btn" disabled style="background:var(--surface3);color:var(--hint);cursor:not-allowed;opacity:1;">Active workout — discard first</button>'
-          : "<button class='start-btn' onclick='startWorkout(\""+r.id+"\")''>▶ Start workout</button>"
-        }
-      </div>`;
-    }).join('')+`<button class="add-card" onclick="navigateTo('builder')">+ New routine</button>`;
+
+    if (!routines.length) {
+      grid.innerHTML = resume + '<div class="empty"><div class="empty-icon">🏋️</div>No routines yet.<br>Go to Routines to create your first!</div><button class="add-card" onclick="navigateTo('builder')">+ Create your first routine</button>';
+      return;
+    }
+
+    let cards = '';
+    routines.forEach(function(r) {
+      const last = [...logs].filter(l => l.routineId === r.id).sort((a,b) => new Date(b.date)-new Date(a.date))[0];
+      const isActive = activeRoutine && activeRoutine.id === r.id;
+      const otherActive = activeRoutine && activeRoutine.id !== r.id;
+      const tags = (r.exercises||[]).map(e => '<span class="routine-ex-tag">' + e.name + '</span>').join('') || '<span style="font-size:12px;color:var(--hint);">No exercises yet</span>';
+      const lastStr = last ? 'Last: ' + fmtDate(last.date) + ' · ' + (last.durationMins||0) + ' mins' : 'Not done yet';
+
+      let btn;
+      if (isActive) {
+        btn = '<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>';
+      } else if (otherActive) {
+        btn = '<button class="start-btn" disabled style="background:var(--surface3);color:var(--hint);cursor:not-allowed;opacity:1;">▶ Start workout</button>';
+      } else {
+        btn = '<button class="start-btn" onclick="startWorkout('' + r.id + '')">▶ Start workout</button>';
+      }
+
+      cards += '<div class="routine-card">'
+        + '<div class="routine-card-header">'
+        + '<div class="routine-info">'
+        + '<div class="routine-name">' + r.name + '</div>'
+        + '<div class="routine-meta">' + (r.exercises||[]).length + ' exercises</div>'
+        + '<div class="routine-last">' + lastStr + '</div>'
+        + '</div></div>'
+        + '<div class="routine-exercises">' + tags + '</div>'
+        + btn
+        + '</div>';
+    });
+
+    grid.innerHTML = resume + cards + '<button class="add-card" onclick="navigateTo('builder')">+ New routine</button>';
   }
 
   // ---- RENDER BUILDER ----
