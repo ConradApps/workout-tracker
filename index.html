@@ -189,10 +189,11 @@
       background: var(--bg); position: fixed; inset: 0; z-index: 60;
       display: flex; flex-direction: column;
       transform: translateY(100%);
-      transition: transform 380ms var(--ease-out);
+      transition: transform 420ms var(--ease-in-out);
       pointer-events: none;
     }
     #screen-workout.active { transform: translateY(0); pointer-events: auto; }
+    #screen-workout.minimising { transform: translateY(100%) scale(0.96); }
 
     .workout-header {
       background: rgba(255,255,255,0.88);
@@ -213,12 +214,12 @@
       color: var(--green); white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     .back-btn {
-      background: none; border: none; color: var(--accent); cursor: pointer;
-      font-size: 17px; font-weight: 600; padding: 4px 6px 4px 0; line-height: 1;
-      display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-      transition: opacity 0.15s;
+      background: var(--surface2); border: none; color: var(--muted); cursor: pointer;
+      font-size: 22px; font-weight: 300; width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      line-height: 1; transition: all 0.15s var(--spring);
     }
-    .back-btn:active { opacity: 0.5; }
+    .back-btn:active { opacity: 0.5; transform: scale(0.88); }
 
     #workoutExercises {
       flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -574,7 +575,7 @@
 <!-- ACTIVE WORKOUT OVERLAY -->
 <div id="screen-workout">
   <div class="workout-header">
-    <button class="back-btn" onclick="closeWorkout()">‹ Back</button>
+    <button class="back-btn" onclick="closeWorkout()" aria-label="Minimise">−</button>
     <div class="workout-title" id="workoutTitle">Workout</div>
     <div class="workout-timer" id="workoutTimer">0:00</div>
   </div>
@@ -763,11 +764,17 @@
     const idx = PAGES.indexOf(screen);
     if (idx >= 0) setPager(idx);
   };
+  let lastPageBeforeWorkout = 0;
   window.openWorkout = function() {
+    lastPageBeforeWorkout = pageIdx;
     document.getElementById('screen-workout').classList.add('active');
   };
   window.closeWorkout = function() {
-    document.getElementById('screen-workout').classList.remove('active');
+    const el = document.getElementById('screen-workout');
+    el.classList.add('minimising');
+    el.classList.remove('active');
+    setTimeout(() => el.classList.remove('minimising'), 420);
+    setPager(lastPageBeforeWorkout, true);
   };
 
   // ─── SWIPE (with velocity / momentum) ────────────────────
