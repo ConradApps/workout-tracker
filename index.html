@@ -88,8 +88,11 @@
     .add-card:active{transform:scale(0.985);background:var(--surface2);}
 
     /* ACTIVE WORKOUT */
-    #screen-workout{background:var(--bg);position:fixed;inset:0;z-index:60;display:none;flex-direction:column;}
-    #screen-workout.active{display:flex;}
+    #screen-workout{background:var(--bg);position:fixed;inset:0;z-index:60;flex-direction:column;
+      display:flex;transform:translateY(100%);pointer-events:none;
+      transition:transform 0.42s var(--ease);}
+    #screen-workout.active{transform:translateY(0);pointer-events:auto;}
+    #screen-workout.minimising{transform:translateY(105%) scale(0.96);transition:transform 0.38s var(--ease);}
     .workout-header{background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,44px) + 0.625rem) 0.875rem 0.625rem;display:flex;align-items:center;gap:8px;}
     .workout-title{font-size:16px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;letter-spacing:-0.01em;}
     .workout-timer{background:var(--green-bg);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;color:var(--green);white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums;}
@@ -310,7 +313,7 @@
 <!-- ACTIVE WORKOUT -->
 <div class="screen" id="screen-workout">
   <div class="workout-header">
-    <button class="back-btn" onclick="navigateTo('home')">←</button>
+    <button class="back-btn" onclick="minimiseWorkout()" aria-label="Minimise workout" style="font-size:22px;font-weight:300;letter-spacing:-1px;">—</button>
     <div class="workout-title" id="workoutTitle">Workout</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="workout-timer" id="workoutTimer">0:00</div>
@@ -496,6 +499,8 @@
   // ---- NAV (pager + workout overlay) ----
   const PAGES = ['home','builder','progress'];
   let pageIdx = 0;
+  let lastPageIdx = 0; // tracks the page we were on before entering workout
+
   function setPager(idx, animate=true){
     pageIdx = Math.max(0, Math.min(2, idx));
     const pager = document.getElementById('pager');
@@ -509,6 +514,7 @@
   }
   window.navigateTo = function(screen) {
     if (screen === 'workout') {
+      lastPageIdx = pageIdx; // remember where we came from
       document.getElementById('screen-workout').classList.add('active');
       window.scrollTo(0,0);
       return;
@@ -516,6 +522,18 @@
     document.getElementById('screen-workout').classList.remove('active');
     const idx = PAGES.indexOf(screen);
     if (idx >= 0) setPager(idx, true);
+  };
+
+  // Minimise — animate down then return to the last visited tab
+  window.minimiseWorkout = function() {
+    const ws = document.getElementById('screen-workout');
+    ws.classList.add('minimising');
+    // After animation completes, hide and go back to last page
+    setTimeout(() => {
+      ws.classList.remove('active');
+      ws.classList.remove('minimising');
+      setPager(lastPageIdx, true);
+    }, 380);
   };
 
   // ---- SWIPE ----
