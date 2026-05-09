@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover"/>
   <meta name="screen-orientation" content="portrait"/>
   <title>Workout Tracker</title>
-  <meta name="theme-color" content="#ffffff"/>
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)"/>
+  <meta name="theme-color" content="#f2f2f7"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -52,7 +53,7 @@
     .nav-icon{font-size:20px;line-height:1;}
 
     /* HEADERS */
-    .page-header{padding:calc(env(safe-area-inset-top, 44px) + 1.25rem) 1.25rem 0.25rem;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+    .page-header{padding:calc(env(safe-area-inset-top, 35px) + 1rem) 1.25rem 0.25rem;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
     .page-header h1{font-size:34px;font-weight:800;letter-spacing:-0.02em;color:var(--text);line-height:1.05;}
     .page-header p{font-size:13px;color:var(--muted);margin-top:4px;font-weight:500;}
     .inner-header{background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);padding:0.875rem 1rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border);}
@@ -94,7 +95,7 @@
       transition:transform 0.42s var(--ease);}
     #screen-workout.active{transform:translateY(0);pointer-events:auto;}
     #screen-workout.minimising{transform:translateY(105%) scale(0.96);transition:transform 0.38s var(--ease);}
-    .workout-header{background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,44px) + 0.625rem) 0.875rem 0.625rem;display:flex;align-items:center;gap:8px;}
+    .workout-header{background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,35px) + 0.625rem) 0.875rem 0.625rem;display:flex;align-items:center;gap:8px;}
     .workout-title{font-size:16px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;letter-spacing:-0.01em;}
     .workout-timer{background:var(--green-bg);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;color:var(--green);white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums;}
     .ex-block{background:var(--surface);border-radius:var(--radius);margin:0 1rem 0.875rem;overflow:hidden;box-shadow:var(--shadow-card);}
@@ -208,8 +209,8 @@
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
     @media(max-width:400px){.field-row{grid-template-columns:1fr;}.field-3{grid-template-columns:1fr 1fr;}}
 
-    body::after{content:'';display:block;position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0px);background:rgba(255,255,255,0.82);backdrop-filter:blur(20px);z-index:49;}
-    body::before{content:'';display:block;position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,44px);background:rgba(255,255,255,0.92);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);z-index:999;pointer-events:none;}
+    body::after{content:'';display:block;position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0px);background:var(--bg);z-index:49;}
+    body::before{content:'';display:block;position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,44px);background:var(--bg);z-index:999;pointer-events:none;}
 
     html{scrollbar-width:none;-ms-overflow-style:none;}
     html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{width:0!important;height:0!important;display:none!important;}
