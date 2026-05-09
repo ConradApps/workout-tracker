@@ -50,7 +50,14 @@ jobs:
 
       - name: Enable edge-to-edge fullscreen (transparent status & nav bars)
         run: |
-          STYLES=android/app/src/main/res/values/styles.xml
+          # Add app background color resource matching the web app bg (#f2f2f7)
+          cat > android/app/src/main/res/values/app_colors.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="appBackground">#f2f2f7</color>
+          </resources>
+          XML
+
           python3 << 'PYEOF'
           import re, pathlib
           p = pathlib.Path("android/app/src/main/res/values/styles.xml")
@@ -62,8 +69,8 @@ jobs:
               <item name="android:windowLightStatusBar">true</item>
               <item name="android:windowLightNavigationBar">true</item>
               <item name="android:fitsSystemWindows">false</item>
+              <item name="android:windowBackground">@color/appBackground</item>
           """
-          # Inject inside the main AppTheme.NoActionBar style
           s = re.sub(
               r'(<style\s+name="AppTheme\.NoActionBar"[^>]*>)',
               r'\1' + inject,
