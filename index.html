@@ -82,8 +82,9 @@
     .routine-last{font-size:12px;color:var(--accent);margin-top:4px;font-weight:600;}
     .routine-exercises{padding:0 1.125rem 0.875rem;display:flex;flex-wrap:wrap;gap:6px;}
     .routine-ex-tag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--muted);}
-    .start-btn{background:var(--accent);border:none;border-radius:0;width:100%;padding:14px;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:opacity 0.15s var(--ease);}
-    .start-btn:active{opacity:0.7;}
+    .start-btn{background:var(--accent);border:none;border-radius:999px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:all 0.15s var(--ease);white-space:nowrap;flex-shrink:0;}
+    .start-btn:active{opacity:0.7;transform:scale(0.95);}
+    .start-btn:disabled{background:var(--surface3);color:var(--hint);cursor:not-allowed;transform:none;opacity:1;}
     .add-card{background:var(--surface);border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--muted);font-family:inherit;font-size:15px;font-weight:600;width:100%;transition:all 0.15s var(--ease);}
     .add-card:active{transform:scale(0.985);background:var(--surface2);}
 
@@ -107,9 +108,11 @@
     .set-num{font-size:14px;font-weight:700;color:var(--muted);width:32px;}
     .set-input{background:var(--surface2);border:none;border-radius:8px;color:var(--text);font-family:inherit;font-size:16px;font-weight:600;padding:8px;width:72px;text-align:center;outline:none;transition:background 0.15s;font-variant-numeric:tabular-nums;}
     .set-input:focus{background:var(--accent-bg);}
-    .set-done-btn{background:transparent;border:2px solid var(--border-strong);border-radius:50%;width:24px;height:24px;padding:0;cursor:pointer;font-size:0;color:transparent;display:inline-block;vertical-align:middle;transition:all 0.18s var(--ease);}
-    .set-done-btn:active{transform:scale(0.85);}
-    .set-done-btn.done{background:var(--green);border-color:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,0.18);}
+    .set-done-btn{background:var(--surface2);border:none;border-radius:7px;width:30px;height:30px;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;transition:background 0.18s var(--ease),transform 0.15s var(--ease),box-shadow 0.18s var(--ease);}
+    .set-done-btn:active{transform:scale(0.82);}
+    .set-done-btn .chk{opacity:0;transform:scale(0.5);transition:opacity 0.18s var(--ease),transform 0.2s var(--ease);}
+    .set-done-btn.done{background:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,0.22);}
+    .set-done-btn.done .chk{opacity:1;transform:scale(1);}
     .set-del-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:6px 0;width:32px;text-align:center;display:block;}
     .set-del-btn:active{color:var(--red);}
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);}
@@ -241,7 +244,7 @@
   <div class="page-header">
     <div><h1>Workouts</h1><p id="homeDateStr"></p></div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <span id="homeTimer" style="font-size:13px;font-weight:700;color:var(--green);display:none;font-variant-numeric:tabular-nums;"></span>
+      <span id="homeTimer" class="workout-timer" style="display:none;"></span>
       <div class="sync-dot" id="syncDot"></div>
     </div>
   </div>
@@ -603,7 +606,7 @@
     if (activeRoutine && workoutStart) {
       const e = Math.floor((new Date()-workoutStart)/1000);
       ht.textContent = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
-      ht.style.display = 'inline';
+      ht.style.display = 'inline-block';
     } else {
       ht.style.display = 'none';
     }
@@ -735,7 +738,7 @@
       const fmt = Math.floor(e/60)+':'+(e%60).toString().padStart(2,'0');
       document.getElementById('workoutTimer').textContent = fmt;
       const ht = document.getElementById('homeTimer');
-      if (ht) ht.textContent = fmt;
+      if (ht) { ht.textContent = fmt; ht.style.display = 'inline-block'; }
     }, 1000);
     history.pushState(null, '', location.href);
     saveWorkoutState();
@@ -759,7 +762,11 @@
               <td class="set-num">${si+1}</td>
               ${!ex.bw?`<td><input class="set-input" type="number" value="${s.weight}" min="0" step="0.5" oninput="updateSet(${ei},${si},'weight',this.value)"/></td>`:''}
               <td><input class="set-input" type="number" value="${s.reps}" min="1" step="1" oninput="updateSet(${ei},${si},'reps',this.value)"/></td>
-              <td><button class="set-done-btn${s.done?' done':''}" onclick="toggleDone(${ei},${si})" aria-label="Mark set done"></button></td>
+              <td><button class="set-done-btn${s.done?' done':''}" onclick="toggleDone(${ei},${si})" aria-label="Mark set done">
+                <svg class="chk" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8l3.5 3.5L13 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button></td>
               <td><button class="set-del-btn" onclick="delSet(${ei},${si})">✕</button></td>
             </tr>`).join('')}
           </tbody>
@@ -837,16 +844,18 @@
     updateHomeTimer();
     const grid = document.getElementById('routineGrid');
 
-    const resumeBtn = `<button class="start-btn" style="background:var(--green);color:#fff;" onclick="navigateTo('workout')">Resume workout →</button>`;
+    const resumeBtn = `<button class="start-btn" style="background:var(--green);" onclick="navigateTo('workout')">Resume →</button>`;
 
     let resume = '';
     if (activeRoutine) {
       resume = `<div class="routine-card">
-        <div class="routine-card-header"><div class="routine-info">
-          <div class="routine-name">⏱ Workout in progress</div>
-          <div class="routine-meta">${activeRoutine.name}</div>
-        </div></div>
-        ${resumeBtn}
+        <div class="routine-card-header">
+          <div class="routine-info" style="flex:1;min-width:0;">
+            <div class="routine-name">Workout in progress</div>
+            <div class="routine-meta">${activeRoutine.name}</div>
+          </div>
+          ${resumeBtn}
+        </div>
       </div>`;
     }
 
@@ -866,9 +875,9 @@
       if (isActive) {
         btn = resumeBtn;
       } else if (otherActive) {
-        btn = `<button class="start-btn" disabled style="background:var(--surface3);color:var(--hint);cursor:not-allowed;opacity:1;">▶ Start workout</button>`;
+        btn = `<button class="start-btn" disabled>▶ Start</button>`;
       } else {
-        btn = `<button class="start-btn" onclick="startWorkout('${r.id}')">▶ Start workout</button>`;
+        btn = `<button class="start-btn" onclick="startWorkout('${r.id}')">▶ Start</button>`;
       }
 
       return `<div class="routine-card">
