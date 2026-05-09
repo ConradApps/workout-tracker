@@ -75,14 +75,14 @@
     .routine-grid{display:flex;flex-direction:column;gap:14px;}
     .routine-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card);transition:transform 0.15s var(--ease);}
     .routine-card:active{transform:scale(0.985);}
-    .routine-card-header{padding:1.125rem 1.125rem 0.625rem;display:flex;align-items:center;gap:12px;}
+    .routine-card-header{padding:1rem 1rem 0.875rem;display:flex;align-items:center;gap:12px;}
     .routine-info{flex:1;}
     .routine-name{font-size:19px;font-weight:700;letter-spacing:-0.015em;color:var(--text);}
     .routine-meta{font-size:13px;color:var(--muted);margin-top:2px;font-weight:500;}
     .routine-last{font-size:12px;color:var(--accent);margin-top:4px;font-weight:600;}
     .routine-exercises{padding:0 1.125rem 0.875rem;display:flex;flex-wrap:wrap;gap:6px;}
     .routine-ex-tag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--muted);}
-    .start-btn{background:var(--accent);border:none;border-radius:999px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:all 0.15s var(--ease);white-space:nowrap;flex-shrink:0;}
+    .start-btn{background:var(--accent);border:none;border-radius:999px;padding:10px 20px;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:all 0.15s var(--ease);white-space:nowrap;flex-shrink:0;margin-right:-4px;box-shadow:0 2px 12px rgba(240,112,48,0.35);}
     .start-btn:active{opacity:0.7;transform:scale(0.95);}
     .start-btn:disabled{background:var(--surface3);color:var(--hint);cursor:not-allowed;transform:none;opacity:1;}
     .add-card{background:var(--surface);border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--muted);font-family:inherit;font-size:15px;font-weight:600;width:100%;transition:all 0.15s var(--ease);}
@@ -118,10 +118,10 @@
     .ex-footer{padding:10px 12px;display:flex;gap:8px;border-top:1px solid var(--border);}
     .ex-footer-btn{flex:1;background:var(--surface2);border:none;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;transition:all 0.15s var(--ease);}
     .ex-footer-btn:active{transform:scale(0.97);background:var(--surface3);}
-    .workout-footer{padding:0.75rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);display:flex;gap:8px;flex-shrink:0;background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--border);}
-    .btn-finish{flex:1;background:var(--green);border:none;border-radius:14px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:opacity 0.15s var(--ease);}
+    .workout-footer{padding:0.5rem 0.875rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem);display:flex;gap:8px;flex-shrink:0;background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--border);}
+    .btn-finish{flex:1;background:var(--green);border:none;border-radius:12px;padding:11px;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#fff;cursor:pointer;transition:opacity 0.15s var(--ease);}
     .btn-finish:active{opacity:0.7;}
-    .btn-add-ex{background:var(--surface2);border:none;border-radius:14px;padding:15px 16px;font-family:inherit;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;transition:all 0.15s var(--ease);}
+    .btn-add-ex{background:var(--surface2);border:none;border-radius:12px;padding:11px 14px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all 0.15s var(--ease);}
     .btn-add-ex:active{transform:scale(0.96);background:var(--surface3);}
 
     /* BUILDER */
@@ -882,14 +882,13 @@
 
       return `<div class="routine-card">
         <div class="routine-card-header">
-          <div class="routine-info">
+          <div class="routine-info" style="flex:1;min-width:0;">
             <div class="routine-name">${r.name}</div>
-            <div class="routine-meta">${(r.exercises||[]).length} exercises</div>
-            <div class="routine-last">${lastStr}</div>
+            <div class="routine-meta">${(r.exercises||[]).length} exercises · ${lastStr}</div>
           </div>
+          ${btn}
         </div>
         <div class="routine-exercises">${tags}</div>
-        ${btn}
       </div>`;
     }).join('');
 
