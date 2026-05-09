@@ -46,7 +46,33 @@ jobs:
         run: npx cap add android
 
       - name: Copy web assets into Capacitor
-        run: npx cap copy android
+        run: npx cap sync android
+
+      - name: Enable edge-to-edge fullscreen (transparent status & nav bars)
+        run: |
+          STYLES=android/app/src/main/res/values/styles.xml
+          python3 << 'PYEOF'
+          import re, pathlib
+          p = pathlib.Path("android/app/src/main/res/values/styles.xml")
+          s = p.read_text()
+          inject = """
+              <item name="android:statusBarColor">@android:color/transparent</item>
+              <item name="android:navigationBarColor">@android:color/transparent</item>
+              <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+              <item name="android:windowLightStatusBar">true</item>
+              <item name="android:windowLightNavigationBar">true</item>
+              <item name="android:fitsSystemWindows">false</item>
+          """
+          # Inject inside the main AppTheme.NoActionBar style
+          s = re.sub(
+              r'(<style\s+name="AppTheme\.NoActionBar"[^>]*>)',
+              r'\1' + inject,
+              s,
+              count=1,
+          )
+          p.write_text(s)
+          print(s)
+          PYEOF
 
       - name: Generate Android icons
         run: |
@@ -57,7 +83,6 @@ jobs:
 
           src = Image.open("icon-512.png").convert("RGBA")
 
-          # White background composite
           def make_png(size):
             bg = Image.new("RGBA", (size, size), (255, 255, 255, 255))
             icon = src.resize((size, size), Image.LANCZOS)
@@ -79,15 +104,12 @@ jobs:
             img = make_png(size)
             img.save(f"{path}/ic_launcher.png")
             img.save(f"{path}/ic_launcher_round.png")
-            # Foreground for adaptive icon (no padding)
             img.save(f"{path}/ic_launcher_foreground.png")
             print(f"{folder}: {size}px")
-
           PYEOF
 
       - name: Fix adaptive icon XML to use plain launcher
         run: |
-          # Replace adaptive icon XML to use our plain icon directly
           cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -104,7 +126,6 @@ jobs:
           </adaptive-icon>
           XML
 
-          # Set background color to white
           mkdir -p android/app/src/main/res/values
           cat > android/app/src/main/res/values/ic_launcher_background.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
@@ -143,9 +164,9 @@ jobs:
           tag_name: latest
           name: "Lyfts – Latest Build"
           body: |
-            ✅ Auto-built from the latest `main` branch commit.
+            Auto-built from the latest `main` branch commit (fullscreen edge-to-edge).
 
-            **To install on your OPPO Find X9:**
+            **Install on Android:**
             1. Download `Lyfts-debug.apk` below
             2. Open the file on your phone
             3. Tap Install (allow "Install unknown apps" if prompted)
